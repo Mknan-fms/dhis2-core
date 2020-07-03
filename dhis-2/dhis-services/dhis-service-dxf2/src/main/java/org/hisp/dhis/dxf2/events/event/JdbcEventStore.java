@@ -200,9 +200,6 @@ public class JdbcEventStore implements EventStore
 
     private final JdbcTemplate jdbcTemplate;
 
-    // required for update tei operation
-    private final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
-
     private final CurrentUserService currentUserService;
 
     private final IdentifiableObjectManager manager;
@@ -232,7 +229,6 @@ public class JdbcEventStore implements EventStore
         this.currentUserService = currentUserService;
         this.manager = identifiableObjectManager;
         this.jsonMapper = jsonMapper;
-        this.namedParameterJdbcTemplate = new NamedParameterJdbcTemplate( jdbcTemplate.getDataSource() );
         this.env = env;
         
     }
