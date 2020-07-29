@@ -1628,7 +1628,7 @@ public class JdbcEventStore implements EventStore
         }
         catch ( DataAccessException e )
         {
-            log.error("An error occurred saving a TrackedEntityComment", e);
+            log.error( "An error occurred saving a TrackedEntityComment", e );
             return null;
         }
 
