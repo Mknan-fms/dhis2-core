@@ -31,8 +31,6 @@ package org.hisp.dhis.programrule.engine;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.List;
-import java.util.Optional;
-import java.util.Set;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -74,8 +72,9 @@ public class DefaultProgramRuleEngineService implements ProgramRuleEngineService
 
     private final ProgramRuleService programRuleService;
 
-    public DefaultProgramRuleEngineService( @Qualifier( "newRuleEngine" ) ProgramRuleEngine programRuleEngineNew,
-                                            @Qualifier( "oldRuleEngine" ) ProgramRuleEngine programRuleEngine,
+    public DefaultProgramRuleEngineService(
+        @Qualifier( "serviceTrackerRuleEngine" ) ProgramRuleEngine programRuleEngineNew,
+        @Qualifier( "notificationRuleEngine" ) ProgramRuleEngine programRuleEngine,
         List<RuleActionImplementer> ruleActionImplementers, ProgramInstanceService programInstanceService,
         ProgramStageInstanceService programStageInstanceService, ProgramRuleService programRuleService )
     {
@@ -95,6 +94,7 @@ public class DefaultProgramRuleEngineService implements ProgramRuleEngineService
     }
 
     @Override
+    @Transactional
     public List<RuleEffect> evaluateEnrollmentAndRunEffects( long programInstanceId )
     {
         ProgramInstance programInstance = programInstanceService.getProgramInstance( programInstanceId );
@@ -104,7 +104,7 @@ public class DefaultProgramRuleEngineService implements ProgramRuleEngineService
             return Lists.newArrayList();
         }
 
-        List<RuleEffect> ruleEffects = getRuleEffects( programInstance, Optional.empty(),
+        List<RuleEffect> ruleEffects = programRuleEngine.evaluate( programInstance,
             programInstance.getProgramStageInstances() );
 
         for ( RuleEffect effect : ruleEffects )
@@ -115,10 +115,12 @@ public class DefaultProgramRuleEngineService implements ProgramRuleEngineService
                 i.implement( effect, programInstance );
             } );
         }
+
         return ruleEffects;
     }
 
     @Override
+    @Transactional
     public List<RuleEffect> evaluateEventAndRunEffects( long programStageInstanceId )
     {
         ProgramStageInstance psi = programStageInstanceService.getProgramStageInstance( programStageInstanceId );
@@ -128,8 +130,10 @@ public class DefaultProgramRuleEngineService implements ProgramRuleEngineService
             return Lists.newArrayList();
         }
 
-        List<RuleEffect> ruleEffects = getRuleEffects( psi.getProgramInstance(), Optional.of( psi ),
-            psi.getProgramInstance().getProgramStageInstances() );
+        ProgramInstance programInstance = programInstanceService.getProgramInstance( psi.getProgramInstance().getId() );
+
+        List<RuleEffect> ruleEffects = programRuleEngine.evaluate( psi.getProgramInstance(), psi,
+            programInstance.getProgramStageInstances() );
 
         for ( RuleEffect effect : ruleEffects )
         {
@@ -149,11 +153,5 @@ public class DefaultProgramRuleEngineService implements ProgramRuleEngineService
         ProgramRule programRule = programRuleService.getProgramRule( programRuleId );
 
         return programRuleEngineNew.getDescription( condition, programRule );
-    }
-
-    private List<RuleEffect> getRuleEffects( ProgramInstance enrollment, Optional<ProgramStageInstance> event,
-        Set<ProgramStageInstance> events )
-    {
-        return programRuleEngine.evaluate( enrollment, event, events );
     }
 }
