@@ -111,6 +111,12 @@
     </init-param>
   </filter>
 
+  <filter>
+    <filter-name>appOverrideFilter</filter-name>
+    <filter-class>org.hisp.dhis.servlet.filter.AppOverrideFilter</filter-flass>
+    <async-supported>false</async-supported>
+  </filter>
+
   <filter-mapping>
     <filter-name>encoding-filter</filter-name>
     <url-pattern>/*</url-pattern>
@@ -162,6 +168,10 @@
   <filter-mapping>
     <filter-name>requestIdentifierFilter</filter-name>
     <url-pattern>/*</url-pattern>
+  </filter-mapping>
+  <filter-mapping>
+    <filter-name>appOverrideFilter</filter-name>
+    <url-pattern>/apps/*</url-pattern>
   </filter-mapping>
 
   <filter-mapping>

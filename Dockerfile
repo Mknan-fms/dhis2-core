@@ -2,7 +2,7 @@
 # Build the base DHIS2 image
 #
 
-FROM maven:3.6.3-jdk-8-slim as build
+FROM maven:3.6.3-jdk-8-slim as builder
 
 ARG IDENTIFIER=unknown
 LABEL identifier=${IDENTIFIER}
@@ -12,6 +12,8 @@ RUN apt-get update && \
     apt-get install --no-install-recommends -y \
         git && \
     rm -rf /var/lib/apt/lists/*
+
+FROM builder as build
 
 WORKDIR /src
 
