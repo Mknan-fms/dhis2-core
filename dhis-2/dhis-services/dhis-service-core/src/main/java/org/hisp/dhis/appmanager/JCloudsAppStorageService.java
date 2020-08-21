@@ -37,6 +37,7 @@ import org.hisp.dhis.commons.util.DebugUtils;
 import org.hisp.dhis.external.conf.ConfigurationKey;
 import org.hisp.dhis.external.conf.DhisConfigurationProvider;
 import org.hisp.dhis.external.location.LocationManager;
+import org.hisp.dhis.external.location.LocationManagerException;
 import org.jclouds.ContextBuilder;
 import org.jclouds.blobstore.BlobRequestSigner;
 import org.jclouds.blobstore.BlobStore;
@@ -429,7 +430,13 @@ public class JCloudsAppStorageService
 
             String filepath = configurationProvider.getProperty( ConfigurationKey.FILESTORE_CONTAINER ) + "/" + key;
             filepath = filepath.replaceAll( "//", "/" );
-            File res = locationManager.getFileForReading( filepath );
+            File res;
+            
+            try {
+                res = locationManager.getFileForReading( filepath );
+            } catch (LocationManagerException e) {
+                return null;
+            }
 
             if ( res.exists() )
             {

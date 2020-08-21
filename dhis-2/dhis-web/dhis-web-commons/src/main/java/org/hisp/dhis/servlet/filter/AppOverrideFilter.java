@@ -29,6 +29,8 @@ package org.hisp.dhis.servlet.filter;
  */
 import lombok.extern.slf4j.Slf4j;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Date;
@@ -66,6 +68,9 @@ public class AppOverrideFilter
     @Autowired
     private AppManager appManager;
 
+    @Autowired
+    private ObjectMapper jsonMapper;
+
     // -------------------------------------------------------------------------
     // Filter implementation
     // -------------------------------------------------------------------------
@@ -92,6 +97,8 @@ public class AppOverrideFilter
                 log.debug( String.format( "Manifest context path: '%s'", contextPath ) );
                 app.getActivities().getDhis().setHref( contextPath );
             }
+
+            jsonMapper.writeValue( response.getOutputStream(), app );
         }
         // Any other resource
         else
