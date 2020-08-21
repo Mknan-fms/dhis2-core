@@ -43,6 +43,40 @@ public interface AppManager
 {
     String ID = AppManager.class.getName();
 
+    public static final String[] BUNDLED_APPS = {
+        // Javascript apps
+        "app-management",
+        "cache-cleaner",
+        "capture",
+        "dashboard",
+        "data-administration",
+        "data-visualizer",
+        "data-quality",
+        "datastore",
+        "event-reports",
+        "event-visualizer",
+        "import-export",
+        "interpretation",
+        "maintenance",
+        "maps",
+        "menu-management",
+        "messaging",
+        "pivot",
+        "reports",
+        "scheduler",
+        "settings",
+        "tracker-capture",
+        "translations",
+        "usage-analytics",
+        "user",
+        "user-profile",
+        
+        // Struts apps
+        "approval",
+        "dataentry",
+        // "maintenance",
+    };
+
     /**
      * Returns a list of all installed apps.
      *

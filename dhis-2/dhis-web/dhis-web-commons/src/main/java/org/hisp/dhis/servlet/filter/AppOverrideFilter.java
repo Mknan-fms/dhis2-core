@@ -31,6 +31,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
@@ -42,9 +43,18 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.context.request.ServletWebRequest;
+import org.springframework.util.StreamUtils;
+
+import org.hisp.dhis.util.DateUtils;
+import org.hisp.dhis.appmanager.App;
 import org.hisp.dhis.appmanager.AppManager;
+import org.hisp.dhis.appmanager.AppStatus;
 
 /**
  * @author Austin McGee <austin@dhis2.org>
@@ -56,40 +66,6 @@ public class AppOverrideFilter
     @Autowired
     private AppManager appManager;
 
-    public static final String[] BUNDLED_APPS = {
-        // Javascript apps
-        "app-management",
-        "cache-cleaner",
-        "capture",
-        "dashboard",
-        "data-administration",
-        "data-visualizer",
-        "data-quality",
-        "datastore",
-        "event-reports",
-        "event-visualizer",
-        "import-export",
-        "interpretation",
-        "maintenance",
-        "maps",
-        "menu-management",
-        "messaging",
-        "pivot",
-        "reports",
-        "scheduler",
-        "settings",
-        "tracker-capture",
-        "translations",
-        "usage-analytics",
-        "user",
-        "user-profile",
-        
-        // Struts apps
-        "approval",
-        "dataentry",
-        // "maintenance",
-    };
-
     // -------------------------------------------------------------------------
     // Filter implementation
     // -------------------------------------------------------------------------
@@ -99,30 +75,88 @@ public class AppOverrideFilter
     {
     }
 
+    // From AppController.java (some duplication)
+    private void serveInstalledAppResource( App app, String resourcePath, HttpServletRequest request, HttpServletResponse response)
+        throws IOException {
+        // Get page requested
+
+        log.debug( String.format( "Serving app resource: '%s'", resourcePath ) );
+
+        // Handling of 'manifest.webapp'
+        if ( "manifest.webapp".equals( resourcePath ) )
+        {
+            // If request was for manifest.webapp, check for * and replace with host
+            if ( "*".equals( app.getActivities().getDhis().getHref() ) )
+            {
+                String contextPath = "../";
+                log.debug( String.format( "Manifest context path: '%s'", contextPath ) );
+                app.getActivities().getDhis().setHref( contextPath );
+            }
+        }
+        // Any other resource
+        else
+        {
+            // Retrieve file
+            Resource resource = appManager.getAppResource( app, resourcePath );
+
+            if ( resource == null )
+            {
+                response.sendError( HttpServletResponse.SC_NOT_FOUND );
+                return;
+            }
+
+            String filename = resource.getFilename();
+            log.debug( String.format( "App filename: '%s'", filename ) );
+
+            if ( new ServletWebRequest( request, response ).checkNotModified( resource.lastModified() ) )
+            {
+                response.setStatus( HttpServletResponse.SC_NOT_MODIFIED );
+                return;
+            }
+
+            String mimeType = request.getSession().getServletContext().getMimeType( filename );
+
+            if ( mimeType != null )
+            {
+                response.setContentType( mimeType );
+            }
+
+            response.setContentLength( (int) resource.contentLength() );
+            response.setHeader( "Last-Modified", DateUtils.getHttpDateString( new Date( resource.lastModified() ) ) );
+            StreamUtils.copy( resource.getInputStream(), response.getOutputStream() );
+        }
+    }
+
     @Override
     public void doFilter( ServletRequest req, ServletResponse res, FilterChain chain )
         throws IOException, ServletException {
         HttpServletRequest request = (HttpServletRequest) req;
+        HttpServletResponse response = (HttpServletResponse) res;
         String requestURI = request.getRequestURI();
 
-        List<String> bundledApps = Arrays.asList(BUNDLED_APPS);
-        String pattern = "^/dhis-web-(" + String.join("|", bundledApps) + ")";
+        List<String> bundledApps = Arrays.asList(AppManager.BUNDLED_APPS);
+        String pattern = "^/dhis-web-(" + String.join("|", bundledApps) + ")(?:/|$)(.*)";
 
         Pattern p = Pattern.compile(pattern);
         Matcher m = p.matcher(requestURI);
 
-        if (m.matches()) {
+        log.debug("AppOverrideFilter :: Testing " + requestURI +" against pattern " + pattern);
+
+        if (m.find()) {
             String namespace = m.group(0);
             String appName = m.group(1);
+            String resourcePath = m.group(2);
 
-            log.debug("AppOverrideFilter :: Matched for URI " + requestURI);
+            log.info("AppOverrideFilter :: Matched for URI " + requestURI);
 
-            if (appManager.exists(appName)) {
-                String newURI = "/api/apps/" + appName + requestURI.substring(namespace.length());
+            App app = appManager.getApp(appName);
 
-                log.info("AppOverrideFilter :: Overridden app " + appName + " found, forwarding to " + newURI);
+            if (app != null && app.getAppState() != AppStatus.DELETION_IN_PROGRESS) {
+                log.info("AppOverrideFilter :: Overridden app " + appName + " found, serving override");
+                serveInstalledAppResource(app, resourcePath, request, response);
+                // String newURI = "/api/apps/" + appName + requestURI.substring(namespace.length());
 
-                req.getRequestDispatcher(newURI).forward(req, res);
+                // req.getRequestDispatcher(newURI).forward(req, res);
                 return;
             } else {
                 log.info("AppOverrideFilter :: App " + appName + " not found, falling back to bundled app");

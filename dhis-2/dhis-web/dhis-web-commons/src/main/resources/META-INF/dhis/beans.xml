@@ -560,9 +560,7 @@
   <bean class="org.hisp.dhis.security.DefaultRolesPrefixPostProcessor" />
 
   <bean id="org.hisp.dhis.servlet.filter.AppOverrideFilter" 
-    class="org.hisp.dhis.servlet.filter.AppOverrideFilter" 
-    scope="prototype">
-    <property name="appManager" ref="org.hisp.dhis.appmanager.AppManager" />
+    class="org.hisp.dhis.servlet.filter.AppOverrideFilter" >
   </bean>
 
 </beans>

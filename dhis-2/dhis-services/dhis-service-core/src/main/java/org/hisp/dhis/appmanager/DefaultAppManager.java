@@ -308,6 +308,10 @@ public class DefaultAppManager
     @Override
     public boolean isAccessible( App app, User user )
     {
+        List<String> overrideApps = Arrays.asList(AppManager.BUNDLED_APPS);
+        if (overrideApps.contains(app.getName())) {
+            return false;
+        }
         if ( user == null || user.getUserCredentials() == null || app == null || app.getName() == null )
         {
             return false;
