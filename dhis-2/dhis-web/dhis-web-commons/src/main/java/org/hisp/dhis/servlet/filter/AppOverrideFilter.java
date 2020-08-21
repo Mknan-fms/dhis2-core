@@ -30,6 +30,10 @@ package org.hisp.dhis.servlet.filter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -39,6 +43,9 @@ import javax.servlet.ServletResponse;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.hisp.dhis.appmanager.AppManager;
+
 /**
  * @author Austin McGee <austin@dhis2.org>
  */
@@ -46,9 +53,42 @@ import javax.servlet.http.HttpServletRequest;
 public class AppOverrideFilter
     implements Filter
 {
-    // private static final String REDIRECT_PATH_KEY = "redirectPath";
+    @Autowired
+    private AppManager appManager;
 
-    // private String redirectPath;
+    public static final String[] BUNDLED_APPS = {
+        // Javascript apps
+        "app-management",
+        "cache-cleaner",
+        "capture",
+        "dashboard",
+        "data-administration",
+        "data-visualizer",
+        "data-quality",
+        "datastore",
+        "event-reports",
+        "event-visualizer",
+        "import-export",
+        "interpretation",
+        "maintenance",
+        "maps",
+        "menu-management",
+        "messaging",
+        "pivot",
+        "reports",
+        "scheduler",
+        "settings",
+        "tracker-capture",
+        "translations",
+        "usage-analytics",
+        "user",
+        "user-profile",
+        
+        // Struts apps
+        "approval",
+        "dataentry",
+        // "maintenance",
+    };
 
     // -------------------------------------------------------------------------
     // Filter implementation
@@ -57,23 +97,39 @@ public class AppOverrideFilter
     @Override
     public void init( FilterConfig config )
     {
-        // redirectPath = config.getInitParameter( REDIRECT_PATH_KEY );
     }
 
     @Override
     public void doFilter( ServletRequest req, ServletResponse res, FilterChain chain )
         throws IOException, ServletException {
-        log.info( "AppOverride Filter!" );
-        
         HttpServletRequest request = (HttpServletRequest) req;
         String requestURI = request.getRequestURI();
 
-        if (requestURI.startsWith("/apps/")) {
-            String newURI = requestURI.replace("/apps/", "/dhis-web-apps/");
-            req.getRequestDispatcher(newURI).forward(req, res);
-        } else {
-            chain.doFilter(req, res);
+        List<String> bundledApps = Arrays.asList(BUNDLED_APPS);
+        String pattern = "^/dhis-web-(" + String.join("|", bundledApps) + ")";
+
+        Pattern p = Pattern.compile(pattern);
+        Matcher m = p.matcher(requestURI);
+
+        if (m.matches()) {
+            String namespace = m.group(0);
+            String appName = m.group(1);
+
+            log.debug("AppOverrideFilter :: Matched for URI " + requestURI);
+
+            if (appManager.exists(appName)) {
+                String newURI = "/api/apps/" + appName + requestURI.substring(namespace.length());
+
+                log.info("AppOverrideFilter :: Overridden app " + appName + " found, forwarding to " + newURI);
+
+                req.getRequestDispatcher(newURI).forward(req, res);
+                return;
+            } else {
+                log.info("AppOverrideFilter :: App " + appName + " not found, falling back to bundled app");
+            }
         }
+
+        chain.doFilter(req, res);
     }
 
     @Override
