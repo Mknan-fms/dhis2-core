@@ -71,6 +71,8 @@ public class AppOverrideFilter
     @Autowired
     private ObjectMapper jsonMapper;
 
+    public static final String APP_PATH_PATTERN = "^/dhis-web-(" + String.join("|", AppManager.BUNDLED_APPS) + ")/(.*)";
+
     // -------------------------------------------------------------------------
     // Filter implementation
     // -------------------------------------------------------------------------
@@ -141,13 +143,8 @@ public class AppOverrideFilter
         HttpServletResponse response = (HttpServletResponse) res;
         String requestURI = request.getRequestURI();
 
-        List<String> bundledApps = Arrays.asList(AppManager.BUNDLED_APPS);
-        String pattern = "^/dhis-web-(" + String.join("|", bundledApps) + ")(?:/|$)(.*)";
-
-        Pattern p = Pattern.compile(pattern);
+        Pattern p = Pattern.compile(APP_PATH_PATTERN);
         Matcher m = p.matcher(requestURI);
-
-        log.debug("AppOverrideFilter :: Testing " + requestURI +" against pattern " + pattern);
 
         if (m.find()) {
             String namespace = m.group(0);

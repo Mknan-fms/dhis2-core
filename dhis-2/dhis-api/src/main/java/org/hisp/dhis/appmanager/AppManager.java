@@ -36,6 +36,8 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 
+import com.google.common.collect.ImmutableList;
+
 /**
  * @author Saptarshi Purkayastha
  */
@@ -43,7 +45,7 @@ public interface AppManager
 {
     String ID = AppManager.class.getName();
 
-    public static final String[] BUNDLED_APPS = {
+    ImmutableList<String> BUNDLED_APPS = ImmutableList.of(
         // Javascript apps
         "app-management",
         "cache-cleaner",
@@ -74,8 +76,8 @@ public interface AppManager
         // Struts apps
         "approval",
         "dataentry",
-        // "maintenance",
-    };
+        "maintenance-mobile"
+    );
 
     /**
      * Returns a list of all installed apps.

@@ -438,7 +438,13 @@ public class JCloudsAppStorageService
                 return null;
             }
 
-            if ( res.exists() )
+            if ( res.isDirectory() )
+            {
+                String indexPath = pageName.replaceAll("/+$", "") + "/index.html";
+                log.info("Resource " + pageName + " (" + filepath + " is a directory, serving " + indexPath);
+                return getAppResource(app, indexPath);
+            }
+            else if ( res.exists() )
             {
                 return new FileSystemResource( res );
             }
