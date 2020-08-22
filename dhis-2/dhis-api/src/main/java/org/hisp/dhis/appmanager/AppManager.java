@@ -36,7 +36,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 
-import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 /**
  * @author Saptarshi Purkayastha
@@ -45,7 +45,7 @@ public interface AppManager
 {
     String ID = AppManager.class.getName();
 
-    ImmutableList<String> BUNDLED_APPS = ImmutableList.of(
+    ImmutableSet<String> BUNDLED_APPS = ImmutableSet.of(
         // Javascript apps
         "app-management",
         "cache-cleaner",
